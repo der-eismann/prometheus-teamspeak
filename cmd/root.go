@@ -61,8 +61,8 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 }
 
 func (app *App) Bind(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(
-		&app.Port, "port", "p", "8010", `Port on which the server should listen`)
+	cmd.PersistentFlags().StringVar(
+		&app.Port, "port", "8010", `Port on which the exporter should listen`)
 	cmd.PersistentFlags().StringVar(
 		&app.Address, "address", "localhost:10011", `Address of the teamspeak server`)
 	cmd.PersistentFlags().StringVarP(
