@@ -19,6 +19,34 @@ type App struct {
 	Password string
 }
 
+var (
+	clientsConnected = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "teamspeak",
+		Name:      "clients",
+		Help:      "Number of connected clients",
+	})
+	uptime = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "teamspeak",
+		Name:      "uptime",
+		Help:      "Uptime in seconds",
+	})
+	maxClients = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "teamspeak",
+		Name:      "max_number_of_clients",
+		Help:      "Maximum number of clients the server is able to handle",
+	})
+	bytesSentTotal = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "teamspeak",
+		Name:      "bytes_sent_total",
+		Help:      "Total number of bytes sent",
+	})
+	bytesReceivedTotal = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "teamspeak",
+		Name:      "bytes_received_total",
+		Help:      "Total number of bytes received",
+	})
+)
+
 func (app *App) Run(cmd *cobra.Command, args []string) {
 	metricsMux := http.NewServeMux()
 	metricsMux.Handle("/metrics", promhttp.Handler())
@@ -27,34 +55,35 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 		log.Fatal(srv.ListenAndServe())
 	}()
 
-	clientsConnected := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "teamspeak",
-		Name:      "clients",
-		Help:      "Number of connected clients",
-	})
 	prometheus.MustRegister(clientsConnected)
-	uptime := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "teamspeak",
-		Name:      "uptime",
-		Help:      "Uptime in seconds",
-	})
 	prometheus.MustRegister(uptime)
-	maxClients := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "teamspeak",
-		Name:      "maxClients",
-		Help:      "blabla",
-	})
 	prometheus.MustRegister(maxClients)
+	prometheus.MustRegister(bytesSentTotal)
+	prometheus.MustRegister(bytesReceivedTotal)
 
-	client, _ := ts3.NewClient(app.Address)
-	_ = client.Login(app.Username, app.Password)
+	client, err := ts3.NewClient(app.Address)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = client.Login(app.Username, app.Password)
+	if err != nil {
+		log.Fatal(err)
+	}
 	client.Use(1)
 	for {
-		sm, _ := client.Server.Info()
-		//sc, _ := client.Server.ServerConnectionInfo()
-		clientsConnected.Set(float64(sm.ClientsOnline))
+		sm, err := client.Server.Info()
+		if err != nil {
+			log.Fatal(err)
+		}
+		sc, err := client.Server.ServerConnectionInfo()
+		if err != nil {
+			log.Fatal(err)
+		}
+		clientsConnected.Set(float64(sm.ClientsOnline - sm.QueryClientsOnline))
 		uptime.Set(float64(sm.Uptime))
 		maxClients.Set(float64(sm.MaxClients))
+		bytesSentTotal.Set(float64(sc.BytesSentTotal))
+		bytesReceivedTotal.Set(float64(sc.BytesReceivedTotal))
 		time.Sleep(5 * time.Second)
 	}
 
@@ -66,7 +95,7 @@ func (app *App) Bind(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(
 		&app.Address, "address", "localhost:10011", `Address of the teamspeak server`)
 	cmd.PersistentFlags().StringVarP(
-		&app.Username, "username", "u", "", `Username for ServerQuery login`)
+		&app.Username, "username", "u", "serveradmin", `Username for ServerQuery login`)
 	cmd.PersistentFlags().StringVarP(
 		&app.Password, "password", "p", "", `Password for ServerQuery login`)
 }
