@@ -45,6 +45,11 @@ var (
 		Name:      "bytes_received_total",
 		Help:      "Total number of bytes received",
 	})
+	systemInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "teamspeak",
+		Name:      "system_info",
+		Help:      "Information about server version",
+	}, []string{"server_version", "platform", "status", "name"})
 )
 
 func (app *App) Run(cmd *cobra.Command, args []string) {
@@ -60,6 +65,7 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 	prometheus.MustRegister(maxClients)
 	prometheus.MustRegister(bytesSentTotal)
 	prometheus.MustRegister(bytesReceivedTotal)
+	prometheus.MustRegister(systemInfo)
 
 	client, err := ts3.NewClient(app.Address)
 	if err != nil {
@@ -84,6 +90,7 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 		maxClients.Set(float64(sm.MaxClients))
 		bytesSentTotal.Set(float64(sc.BytesSentTotal))
 		bytesReceivedTotal.Set(float64(sc.BytesReceivedTotal))
+		systemInfo.WithLabelValues(sm.Version, sm.Platform, sm.Status, sm.Name).Set(1.0)
 		time.Sleep(5 * time.Second)
 	}
 
