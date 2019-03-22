@@ -13,10 +13,11 @@ import (
 )
 
 type App struct {
-	Port     string
-	Address  string
-	Username string
-	Password string
+	ListenAddress string
+	ListenPort    string
+	Address       string
+	Username      string
+	Password      string
 }
 
 var (
@@ -56,7 +57,7 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 	metricsMux := http.NewServeMux()
 	metricsMux.Handle("/metrics", promhttp.Handler())
 	go func() {
-		srv := createServer(":"+app.Port, metricsMux)
+		srv := createServer(app.ListenAddress+":"+app.ListenPort, metricsMux)
 		log.Fatal(srv.ListenAndServe())
 	}()
 
@@ -98,7 +99,9 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 
 func (app *App) Bind(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(
-		&app.Port, "port", "8010", `Port on which the exporter should listen`)
+		&app.ListenAddress, "listen-address", "localhost", `IP on which the exporter should listen`)
+	cmd.PersistentFlags().StringVar(
+		&app.ListenPort, "listen-port", "8010", `Port on which the exporter should listen`)
 	cmd.PersistentFlags().StringVar(
 		&app.Address, "address", "localhost:10011", `Address of the teamspeak server`)
 	cmd.PersistentFlags().StringVarP(
