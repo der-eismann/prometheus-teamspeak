@@ -1,6 +1,6 @@
 # Source: https://github.com/rebuy-de/golang-template
 
-FROM golang:1.11-alpine as builder
+FROM golang:1.13-alpine as builder
 
 RUN apk add --no-cache git make curl openssl
 
@@ -16,7 +16,7 @@ WORKDIR /src
 RUN set -x \
  && make test \
  && make build \
- && cp --dereference /src/dist/* /usr/local/bin/
+ && cp /src/dist/prometheus-teamspeak /usr/local/bin/
 
 RUN set -x \
  && prometheus-teamspeak version
