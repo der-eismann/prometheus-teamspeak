@@ -4,7 +4,7 @@ import (
 	"github.com/rebuy-de/rebuy-go-sdk/cmdutil"
 	"github.com/sirupsen/logrus"
 
-	"github.com/der-eismann/prometheus-teamspeak/cmd"
+	"github.com/der-eismann/teamspeak-exporter/cmd"
 )
 
 func main() {

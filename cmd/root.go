@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rebuy-de/rebuy-go-sdk/cmdutil"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +58,7 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 	metricsMux.Handle("/metrics", promhttp.Handler())
 	go func() {
 		srv := createServer(app.ListenAddress+":"+app.ListenPort, metricsMux)
-		log.Fatal(srv.ListenAndServe())
+		logrus.Fatal(srv.ListenAndServe())
 	}()
 
 	prometheus.MustRegister(clientsConnected)
@@ -70,22 +70,29 @@ func (app *App) Run(cmd *cobra.Command, args []string) {
 
 	client, err := ts3.NewClient(app.Address)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 	err = client.Login(app.Username, app.Password)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 	client.Use(1)
 	for {
 		sm, err := client.Server.Info()
 		if err != nil {
-			log.Fatal(err)
+			logrus.Fatal(err)
 		}
 		sc, err := client.Server.ServerConnectionInfo()
 		if err != nil {
-			log.Fatal(err)
+			logrus.Fatal(err)
 		}
+		instance, err := client.Server.InstanceInfo()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Printf("%+v", sm)
+		logrus.Printf("%+v", sc)
+		logrus.Printf("%+v", instance)
 		clientsConnected.Set(float64(sm.ClientsOnline - sm.QueryClientsOnline))
 		uptime.Set(float64(sm.Uptime))
 		maxClients.Set(float64(sm.MaxClients))
